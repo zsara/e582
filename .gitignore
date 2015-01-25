@@ -1,2 +1,8 @@
 *.pyc
 notebooks/*checkpoint*
+*~
+*npz
+dataset/
+*h5
+notebooks/*L3b*
+notebooks/*L3m*
