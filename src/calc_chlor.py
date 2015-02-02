@@ -55,7 +55,7 @@ if __name__ == "__main__":
         # and save so we can write out as attributes
         # of our output files
         #
-        start_day=int(infile.attrs['Start Day_GLOSDS'])
+        start_day=int(infile.attrs['Start Day_GLOSDS'])  #convert from 16 bit to 64 bit int
         start_year=infile.attrs['Start Year_GLOSDS']
         start=dt.datetime(start_year-1,12,31) + dt.timedelta(days=start_day)
         end_day=int(infile.attrs['End Day_GLOSDS'])
