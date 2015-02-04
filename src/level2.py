@@ -81,6 +81,9 @@ if __name__ == "__main__":
     out=ax.plot(small_lons,small_lats,'b+')
     ax.set_title('raw pixel center lat/lons')
 
+    #
+    # get the basic Basemap option dictionary
+    #
     lcc_values,lon_res,lat_res=find_corners(small_lons,small_lats)
     lcc_values['resolution']='l'
     lcc_values['projection']='lcc'
@@ -89,6 +92,9 @@ if __name__ == "__main__":
     #pixels with map projection
     #
     fig,ax=plt.subplots(1,1,figsize=(12,12))
+    #
+    # tell Basemap what axis to plot into
+    #
     lcc_values['ax']=ax
     proj=make_plot(lcc_values)
     x,y=proj(small_lons,small_lats)
