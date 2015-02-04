@@ -31,6 +31,7 @@ import pandas as pd
 import time
 import datetime as dt
 
+print(__name__)
 if __name__ == "__main__":
     #
     # store a dataframe with bins,meanvals for later use
