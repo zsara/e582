@@ -1,10 +1,9 @@
 
-import site
-site.addsitedir('../utilities')
-from h5dump import dumph5
 import glob
 import h5py
 from matplotlib import pyplot as plt
+import site
+site.addsitedir('../utilities')
 import reproject
 reload(reproject)
 from reproject import reproj_L1B
@@ -14,24 +13,26 @@ from matplotlib import cm
 from matplotlib.colors import Normalize
 import numpy.ma as ma
 
+
 def make_plot(lcc_values):
     """
       set up the basic map projection details with coastlines and meridians
       return the projection object for further plotting
     """
-    proj=Basemap(**lcc_values)
-    parallels=np.arange(-90, 90, 5)
-    meridians=np.arange(0, 360, 5)
-    proj.drawparallels(parallels, labels=[1, 0, 0, 0],\
-                      fontsize=10, latmax=90)
-    proj.drawmeridians(meridians, labels=[0, 0, 0, 1],\
-                      fontsize=10, latmax=90)
+    proj = Basemap(**lcc_values)
+    parallels = np.arange(-90, 90, 5)
+    meridians = np.arange(0, 360, 5)
+    proj.drawparallels(parallels, labels=[1, 0, 0, 0],
+                       fontsize=10, latmax=90)
+    proj.drawmeridians(meridians, labels=[0, 0, 0, 1],
+                       fontsize=10, latmax=90)
     # draw coast & fill continents
-    #map.fillcontinents(color=[0.25, 0.25, 0.25], lake_color=None) # coral
-    out=proj.drawcoastlines(linewidth=1.5, linestyle='solid', color='k')
+    # map.fillcontinents(color=[0.25, 0.25, 0.25], lake_color=None) # coral
+    proj.drawcoastlines(linewidth=1.5, linestyle='solid', color='k')
     return proj
 
-def find_corners(lons,lats):
+
+def find_corners(lons, lats):
     """
       guess values for the upper right and lower left corners of the
       lat/lon grid and the grid center based on max/min lat lon in the
@@ -39,10 +40,10 @@ def find_corners(lons,lats):
       the lcc projection.  Also return the smallest lat and lon differences
       to get a feeling for the image resolution
     """
-    min_lat,min_lon=np.min(lats),np.min(lons)
-    max_lat,max_lon=np.max(lats),np.max(lons)
-    llcrnrlon,llcrnrlat=min_lon,min_lat
-    urcrnrlon,urcrnrlat=max_lon,max_lat
+    min_lat, min_lon = np.min(lats), np.min(lons)
+    max_lat, max_lon = np.max(lats), np.max(lons)
+    llcrnrlon, llcrnrlat = min_lon, min_lat
+    urcrnrlon, urcrnrlat = max_lon, max_lat
     lon_res=np.min(np.abs(np.diff(lons.flat)))
     lat_res=np.min(np.abs(np.diff(lats.flat)))
     out=dict(llcrnrlon=llcrnrlon,llcrnrlat=llcrnrlat,
