@@ -15,7 +15,8 @@
        hdf file with name stored in final_file ('navigated.h5')
 """
 
-from __future__ import print_function
+from __future__ import print_function, division
+from builtins import range
 
 import glob  #this module gets file names using wildcards
 import site
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     lons=np.linspace(-121,-131.,nlons)
     binned_file=glob.glob('../dataset/A20101522010181.L3b_MO_CHL.h5')[0]
     with  h5py.File(binned_file,'r') as infile:
-        root_key=infile.keys()[0]
+        root_key=list(infile.keys())[0]
         #
         # turn day of year into a month and day
         # and save so we can write out as attributes
