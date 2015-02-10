@@ -53,8 +53,8 @@ def find_corners(lons,lats):
     
 
 if __name__ == "__main__":
-    filename='A2010130213500.h5'
-    path=glob.glob('../dataset/{}'.format(filename))[0]
+    filename='A2010161222500_L2_LAC_OC.h5'
+    path=glob.glob('../notebooks/dataset/{}'.format(filename))[0]
 
 
     with h5py.File(path,'r') as f:

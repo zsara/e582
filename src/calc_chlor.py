@@ -48,7 +48,7 @@ if __name__ == "__main__":
     nlons=500
     lats=np.linspace(40.,50.,nlats)
     lons=np.linspace(-121,-131.,nlons)
-    binned_file=glob.glob('../dataset/A20101522010181.L3b_MO_CHL.h5')[0]
+    binned_file=glob.glob('../notebooks/dataset/A20101822010212_L3b_MO_CHL.main.h5')[0]
     with  h5py.File(binned_file,'r') as infile:
         root_key=infile.keys()[0]
         #
