@@ -2,6 +2,8 @@
    bin modis data into regular latitude and longitude bins   
 """
 
+from __future__ import division
+from builtins import range
 import numpy as np
 
 def reproj_L1B(raw_data,bad_value,raw_lon, raw_lat, lonlim, latlim, res):
