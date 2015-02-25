@@ -15,7 +15,9 @@ c                KV37  -  Water vapor absorption coefficient at 37 GHz
 C                TOX19 -  Oxygen transmission at 19 GHz
 C                TOX37 -  Oxygen transmission at 37 GHz
 c
-      REAL SST,KL19,KL37,KV19,KV37,TOX19,TOX37
+      implicit none
+      REAL*4 SST,KL19,KL37,KV19,KV37,TOX19,TOX37
+      real*4 TC,TCEL,TSCEL
 C
 C  Set effective cloud emission temp
       TC = SST - 6.
