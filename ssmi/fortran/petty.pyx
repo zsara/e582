@@ -1,3 +1,4 @@
+#cython: embedsignature=True,cdivision=True
 import numpy as np
 cimport numpy as np
 
@@ -17,18 +18,17 @@ cimport numpy as np
 cimport cython
 
 def emiss(cint32 ifreq, cfloat32 speed,cfloat32 sst,cfloat32 theta):
-    cdef cfloat32 emissh
-    cdef cfloat32 emissv
+    """
+       returns the horizontal and vertically polarized emissivities
+       for seawater for five frequencies specified by ifreq
+    """
+    cdef cfloat32 emissh,emissv
     emiss_(&ifreq, &speed, &sst, &theta, &emissh, &emissv) 
     return (emissh, emissv)
 
 def coef(cfloat32 sst):
-    cdef cfloat32 kl19
-    cdef cfloat32 kl37
-    cdef cfloat32 kv19
-    cdef cfloat32 kv37
-    cdef cfloat32 tox19
-    cdef cfloat32 tox37
+    cdef cfloat32 kl19,kl37,kv19,kv37
+    cdef cfloat32 tox19,tox37
     coef_(&sst, &kl19, &kl37, &kv19, &kv37,&tox19,&tox37)
     return (kl19,kl37,kv19,kv37,tox19,tox37)
      

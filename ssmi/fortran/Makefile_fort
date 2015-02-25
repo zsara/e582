@@ -1,0 +1,18 @@
+F90= gfortran
+F77= gfortran
+
+all:   emiss.o  coef.o
+	ar ruv libpetty.a $^
+
+
+emiss.o : emiss.f
+
+coef.o : coef.f
+
+clean:
+	rm -f *.o *.mod *.so *.a
+
+%.o : %.f
+	$(F90) -fPIC -c $<
+
+
