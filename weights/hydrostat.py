@@ -1,3 +1,5 @@
+import numpy as np
+
 def hydrostat(T_surf,p_surf,dT_dz,delta_z,num_levels):
     """
        build a hydrostatic atmosphere by integrating the hydrostatic equation from the surface,
