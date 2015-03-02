@@ -8,7 +8,7 @@ setup(name        = 'petty',
                                include_dirs = [numpy.get_include(),'.'],
                                extra_compile_args=['-O3'],
                                library_dirs=['.','lib'],
-                               libraries=['petty','gfortran'])],
+                               libraries=['emiss','gfortran'])],
       cmdclass    = {'build_ext': build_ext},
       )
 
