@@ -1,6 +1,6 @@
 set(CMAKE_C_COMPILER /usr/local/bin/gcc-4.9)
 set(CMAKE_CXX_COMPILER /usr/local/bin/g++-4.9)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 2.8)
 project(temp)
 set(CMAKE_Fortran_COMPILER gfortran)
 enable_language(Fortran)
