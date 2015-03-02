@@ -30,5 +30,5 @@ def coef(cfloat32 sst):
     cdef cfloat32 kl19,kl37,kv19,kv37
     cdef cfloat32 tox19,tox37
     coef_(&sst, &kl19, &kl37, &kv19, &kv37,&tox19,&tox37)
-    return (kl19,kl37,kv19,kv37,tox19,tox37)
+    return (sst,kl19,kl37,kv19,kv37,tox19,tox37)
      

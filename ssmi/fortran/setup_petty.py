@@ -7,7 +7,7 @@ setup(name        = 'petty',
       ext_modules = [Extension('petty', ['petty.pyx'],
                                include_dirs = [numpy.get_include(),'.'],
                                extra_compile_args=['-O3'],
-                               library_dirs=['.'],
+                               library_dirs=['.','lib'],
                                libraries=['petty','gfortran'])],
       cmdclass    = {'build_ext': build_ext},
       )

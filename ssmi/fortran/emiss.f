@@ -182,7 +182,7 @@ c      remh=1.
       if (epsihold .gt. 1.) then
          epsi=epsihold
       endif
-      print *,"in epsalt III",epsr," test ",epsi
+C     print *,"in epsalt III",epsr," test ",epsi
 c$$$      epsi=1.
 c$$$      epsr=1.
       return
