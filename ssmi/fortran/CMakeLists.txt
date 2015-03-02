@@ -1,3 +1,4 @@
+PROJECT(emiss)
 set(CMAKE_MACOSX_RPATH 1)
 # use, i.e. don't skip the full RPATH for the build tree
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
@@ -13,7 +14,8 @@ SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # don't add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
+MESSAGE("here is CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+MESSAGE("here is PROJECT_SOURCE_DIR: ${PROJECT_SOURCE_DIR}")
 # the RPATH to be used when installing, but only if it's not a system directory
 LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
 IF("${isSystemDir}" STREQUAL "-1")
