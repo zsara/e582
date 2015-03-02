@@ -1,7 +1,7 @@
 #set(CMAKE_C_COMPILER /usr/local/bin/gcc-4.9)
 #set(CMAKE_CXX_COMPILER /usr/local/bin/g++-4.9)
 set(CMAKE_C_COMPILER gcc)
-set(CMAKE_CXX_COMPILER g++)
+#set(CMAKE_CXX_COMPILER g++)
 cmake_minimum_required(VERSION 2.8)
 project(temp)
 set(CMAKE_Fortran_COMPILER gfortran)
