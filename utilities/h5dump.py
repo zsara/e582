@@ -6,7 +6,7 @@ import types
 
 def print_attrs(name, obj):
     print("item name: ",name,repr(obj))
-    for key, val in obj.attrs.iteritems():
+    for key, val in obj.attrs.items():
         print("    %s: %s" % (key, val))
 
 def dumph5(filename):

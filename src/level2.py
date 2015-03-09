@@ -5,7 +5,8 @@ from matplotlib import pyplot as plt
 import site
 site.addsitedir('../utilities')
 import reproject
-reload(reproject)
+import importlib
+importlib.reload(reproject)
 from reproject import reproj_L1B
 import numpy as np
 from mpl_toolkits.basemap import Basemap
