@@ -5,9 +5,18 @@ import argparse
 import types
 
 def print_attrs(name, obj):
-    print("item name: ",name,repr(obj))
-    for key, val in obj.attrs.items():
-        print("    %s: %s" % (key, val))
+    if obj.parent.name=='/':
+        print('_'*15)
+        print('root group object',repr(obj))
+        print('_'*15)
+    else:
+        print('member of group: ',obj.parent.name,obj)
+    try:
+        for key, val in obj.attrs.items():
+            print("    %s: %s" % (key, val))
+    except IOError:
+        print('this is an HDFStore pandas dataframe')
+        print('-'*20)
 
 def dumph5(filename):
     #
@@ -16,12 +25,20 @@ def dumph5(filename):
     if isinstance(filename,h5py._hl.files.File):
         raise Exception('need simple filename')
     with  h5py.File(filename,'r') as infile:
+        print('+'*20)
+        print('found the following top-level items: ')
+        for name,object in infile.items():
+            print('{}: {}'.format(name,object))
+        print('+'*20)
         infile.visititems(print_attrs)
         print('-------------------')
         print("attributes for the root file")
         print('-------------------')
-        for key,value in infile.attrs.items():
-            print("attribute name: ",key,"--- value: ",value)
+        try:
+            for key,value in infile.attrs.items():
+                print("attribute name: ",key,"--- value: ",value)
+        except IOError:
+            pass
     return None
         
 if __name__ == "__main__":
