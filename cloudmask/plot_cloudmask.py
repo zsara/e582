@@ -52,9 +52,7 @@ def find_corners(lons, lats):
 
 l1b_file,=glob.glob('../datasets/MYD021*h5')
 geom_file,=glob.glob('../datasets/MYD03*h5')
-cloud_mask,=glob.glob('../datasets/MYD35*h5')
-with h5py.File(geom_file) as geom_file,h5py.File(l1b_file) as l1b_file,\
-  h5py.File(cloud_mask) as cloud_mask:
+with h5py.File(geom_file) as geom_file,h5py.File(l1b_file) as l1b_file:
     #channel31 is emissive channel 10
     index31=10
     chan31=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'][index31,:,:]
@@ -68,7 +66,10 @@ with h5py.File(geom_file) as geom_file,h5py.File(l1b_file) as l1b_file,\
     chan1=(reflective - offset[0])*scale[0]
     the_lon=geom_file['MODIS_Swath_Type_GEO']['Geolocation Fields']['Longitude'][...]
     the_lat=geom_file['MODIS_Swath_Type_GEO']['Geolocation Fields']['Latitude'][...]
-    cloud_mask_byte0=cloud_mask['mod35']['Data Fields']['Cloud_Mask'][0,:,:]
+
+
+
+    
 
 lim= 500
 the_slice=slice(0,lim)
@@ -76,10 +77,11 @@ small_lons=the_lon[the_slice,:]
 small_lats=the_lat[the_slice,:]
 chan31_small=chan31[the_slice,:]
 chan1_small=chan1[the_slice,:]
-cloud_mask_small=cloud_mask_byte0[the_slice,:]
-maskout,landout=bitmap.getmask_zero(cloud_mask_small)
-maskout=maskout.astype(np.float32)
-landout=landout.astype(np.float32)
+cloud_mask,=glob.glob('../datasets/cloud_mask.h5')
+
+with h5py.File(cloud_mask) as cm_h5:
+     maskout=cm_h5['cloudmask'][the_slice,:]
+     landout=cm_h5['landmask'][the_slice,:]
 
 lcc_values,lon_res,lat_res=find_corners(small_lons,small_lats)
 lcc_values['fix_aspect']=True
@@ -130,7 +132,7 @@ CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
 CBar.set_label('Channel 31 radiance (W/m^2/micron/sr')
 proj.ax.set_title('Channel 31 radiance')
 proj.ax.figure.canvas.draw()
-
+fig.savefig('chan31.png')
 
 fig,ax=plt.subplots(1,1,figsize=(12,12))
 #
@@ -146,7 +148,7 @@ CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
 CBar.set_label('Channel 1 reflectance')
 proj.ax.set_title('Channel 1 reflectance')
 proj.ax.figure.canvas.draw()
-
+fig.savefig('chan1.png')
 
 fig,ax=plt.subplots(1,1,figsize=(12,12))
 #
@@ -162,7 +164,7 @@ CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
 CBar.set_label('cloud mask')
 proj.ax.set_title('cloud mask')
 proj.ax.figure.canvas.draw()
-
+fig.savefig('cloudmask.png')
 
 fig,ax=plt.subplots(1,1,figsize=(12,12))
 #
@@ -178,6 +180,6 @@ CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
 CBar.set_label('land mask')
 proj.ax.set_title('land mask')
 proj.ax.figure.canvas.draw()
-
+fig.savefig('landmask.png')
 
 plt.show()
