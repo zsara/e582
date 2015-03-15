@@ -5,7 +5,7 @@ import numpy
 import os
 
 os.environ["CC"] = "clang"
-os.environ["CXX"] = "clang" 
+os.environ["CXX"] = "clang++" 
 
 ext_modules = [Extension('bitmap', ['bitmap.pyx','bitmask.cpp'],
                        include_dirs = [numpy.get_include(),'.'],
