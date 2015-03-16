@@ -23,14 +23,12 @@ except ImportError:
     raise Exception("Failed to import the latest IPython while trying to strip output "
         "from your notebooks.  Either run venv/bin/activate to enter your virtual env, or update "
         "the IPython version on your machine (sudo pip install -U ipython)")
+from IPython.nbconvert.preprocessors.clearoutput import ClearOutputPreprocessor
 
 def strip_output(nb):
     """strip the outputs from a notebook object"""
-    for cell in nb.cells:
-        if 'outputs' in cell:
-            cell['outputs'] = []
-        if 'execution_count' in cell:
-            cell['execution_count'] = 0
+    stripout=ClearOutputPreprocessor()
+    nb,res=stripout.preprocess(nb,{})
     return nb
 
 if __name__ == '__main__':
