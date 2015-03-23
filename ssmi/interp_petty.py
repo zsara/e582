@@ -16,7 +16,7 @@ import petty
 import numpy as np
 import pandas as pd
 
-vecsize=50000
+vecsize=3000
 the_temps=np.linspace(270.,310.,vecsize)
 
 hold_abs=np.empty(vecsize, dtype=[('sst',np.float_),('kl19',np.float_),('kl37',np.float_),

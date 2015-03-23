@@ -8,6 +8,9 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from mpl_toolkits.basemap import Basemap
+import site
+site.addsitedir('fortran/lib')
+import petty
 
 
 def wind_speed(sst,t19v,t22v,t37h,t37v):
@@ -18,7 +21,7 @@ def wind_speed(sst,t19v,t22v,t37h,t37v):
     speed=1.0969*(t19v)-0.4555e0*(t22v)- 1.76*(t37v)+0.786*(t37h)+ 147.9
     return speed
 
-def emiss(sst,windspeed,data):
+def emiss_interp(sst,windspeed,data):
     """
        input:  sst (K), windspeed (m/s), data instance
        return dict(19:(emissv, emissh),37:(emissv,emissh))
@@ -39,7 +42,7 @@ def emiss(sst,windspeed,data):
     out[37]=(emissh,emissv)
     return out
 
-def absorb(sst,data):
+def absorb_interp(sst,data):
     """
        input: sst, data instance
        output: dictionary with values for
@@ -48,6 +51,35 @@ def absorb(sst,data):
     row=np.searchsorted(data.micro_ssts,sst)
     values=data.abs_coeffs.loc[row]
     out=dict(values)
+    return out
+
+def emiss(sst,windspeed,data):
+    """
+       input:  sst (K), windspeed (m/s), data instance
+       return dict(19:(emissv, emissh),37:(emissv,emissh))
+         which are the vertically and horizontally polarized emissivities
+         at 19 GHz and 37 GHz
+    """
+    #19 GHz  = 1
+    freq=1
+    theta=53.1
+    h,v=petty.emiss(freq,windspeed,sst,theta)
+    out={19:(h,v)}
+    freq=3
+    h,v=petty.emiss(freq,windspeed,sst,theta)
+    out[37]=(h,v)
+    return out
+
+
+def absorb(sst,data):
+    """
+       input: sst, data instance
+       output: dictionary with values for
+       'kl19' (m^2/kg), 'kv19' (m^2/kg), 'tox37', 'kv37' (m^2/kg), 'kl37' (m^2/kg), 'tox19', 'sst' (K)
+    """
+    names=['sst','kl19','kl37','kv19','kv37','tox19','tox37']
+    values=petty.coef(sst)
+    out=dict(zip(names,values))
     return out
 
 def find_wv_wl(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=None):
@@ -111,7 +143,7 @@ def create_test_numbers():
     out_dict=dict(zip(names,values))
     DeltaTb19=t19h - t19v
     DeltaTb37=t37h - t37v
-    sst=271.35
+    sst=271.75
     windspeed=10.32
     emiss19h,emiss19v,emiss37h,emiss37v = 0.3255,0.6255,0.3972,0.7102
     names=['DeltaTb19','DeltaTb37','sst','windspeed','emiss19h','emiss19v','emiss37h','emiss37v']
@@ -137,8 +169,9 @@ def create_ubc_numbers(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=
     abs_dict=absorb(sst,data)
     kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
     kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
-    args=[sst,t19v,t22v,t37h,t37v]
+    args=[sst,t19v,t22v,t37h-3.58,t37v-3.58]
     windspeed=wind_speed(*args)
+    print('inside ubc windspeed',windspeed)
     emiss_dict=emiss(sst,windspeed,data)
     emiss19h,emiss19v=emiss_dict[19]
     emiss37h,emiss37v=emiss_dict[37]
