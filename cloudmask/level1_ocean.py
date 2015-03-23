@@ -13,8 +13,6 @@ from matplotlib import cm
 from matplotlib.colors import Normalize
 import matplotlib.pyplot as plt
 
-from timeit import timeit
-
 
 plotdir='{}/{}'.format(os.getcwd(),'plots')
 if not os.path.exists(plotdir):

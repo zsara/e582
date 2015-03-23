@@ -3,7 +3,7 @@ plt.switch_backend('Agg') #batch
 #plt.switch_backend('MacOSX') #interactive
 import numpy as np
 import hist2d
-reload(hist2d)
+#importlib.reload(hist2d)
 from hist2d import hist2d, numba_hist2d
 import numpy.random as nr
 
