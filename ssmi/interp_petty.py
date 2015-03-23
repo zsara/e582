@@ -16,9 +16,10 @@ import petty
 import numpy as np
 import pandas as pd
 
-the_temps=np.linspace(270.,310.,100)
+vecsize=50000
+the_temps=np.linspace(270.,310.,vecsize)
 
-hold_abs=np.empty(100, dtype=[('sst',np.float_),('kl19',np.float_),('kl37',np.float_),
+hold_abs=np.empty(vecsize, dtype=[('sst',np.float_),('kl19',np.float_),('kl37',np.float_),
                               ('kv19',np.float_),('kv37',np.float_),
                               ('tox19',np.float_),('tox37',np.float_)])
 for row,temp in enumerate(the_temps):
@@ -34,11 +35,11 @@ with  h5py.File(out_h5,'a') as f:
     f.attrs['history']='created by interp_petty.py'
     f.attrs['description']='pandas dataframe:  abs_coeffs contains output of coef.f, datasets emissh and emissv are output of emiss.f'
 
-windspeed=np.linspace(0,50.,100)
+windspeed=np.linspace(0,50.,vecsize)
 theta=53.1
 ifreq=[1,2,3,4]
 
-emissh=np.empty([4,100,100],dtype=np.float32)
+emissh=np.empty([4,vecsize,vecsize],dtype=np.float32)
 emissv=np.empty_like(emissh)
 for i,freq in enumerate(ifreq):
     for row,speed in enumerate(windspeed):
