@@ -1,18 +1,25 @@
 from __future__ import division,print_function
 import glob
 import h5py
+import matplotlib
+matplotlib.use('Agg')
+from mpl_toolkits.basemap import Basemap
+from matplotlib import cm
+from matplotlib.colors import Normalize
 from matplotlib import pyplot as plt
 import site
 site.addsitedir('../utilities')
 import reproject
-import importlib
-importlib.reload(reproject)
-from reproject import reproj_L1B
+from stopwatch import timeit
+import compat
+if compat.is_py3:
+    import importlib
+    reload=importlib.reload
+reload(reproject)
+from reproject import reproj_L1B,reproj_numba
 import numpy as np
-from mpl_toolkits.basemap import Basemap
-from matplotlib import cm
-from matplotlib.colors import Normalize
 import numpy.ma as ma
+
 
 
 def make_plot(lcc_values):
@@ -56,7 +63,7 @@ def find_corners(lons, lats):
 
 if __name__ == "__main__":
     filename='A2010130213500.h5'
-    path=glob.glob('../dataset/{}'.format(filename))[0]
+    path=glob.glob('../datasets/{}'.format(filename))[0]
 
 
     with h5py.File(path,'r') as f:
@@ -89,7 +96,8 @@ if __name__ == "__main__":
     lcc_values,lon_res,lat_res=find_corners(small_lons,small_lats)
     lcc_values['resolution']='l'
     lcc_values['projection']='lcc'
-
+    fig.savefig('nobins.png')
+    
     #
     #pixels with map projection
     #
@@ -103,7 +111,8 @@ if __name__ == "__main__":
     proj.ax.plot(x,y,'b+')
     proj.ax.set_title('pixel centers on lcc projection')
     proj.ax.figure.canvas.draw()
-
+    fig.savefig('centers.png')
+    
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
     cmap.set_under('b')
@@ -121,7 +130,12 @@ if __name__ == "__main__":
 
     lonlim=[np.min(lons), np.max(lons)]
     latlim=[np.min(lats), np.max(lats)]
-    chlor_a, longitude, latitude, bin_count = reproj_L1B(chlor_array,chlor_bad_value, small_lons, small_lats, lonlim, latlim, res)
+    with timeit('chlor_slow'):
+        chlor_a, longitude, latitude, bin_count = reproj_L1B(chlor_array,chlor_bad_value, small_lons, small_lats, lonlim, latlim, res)
+    with timeit('chlor_numba'):
+        chlor_a, longitude, latitude, bin_count = reproj_numba(chlor_array,chlor_bad_value, small_lons, small_lats, lonlim, latlim, res)
+    with timeit('chlor_numba 2'):
+        chlor_a, longitude, latitude, bin_count = reproj_numba(chlor_array,chlor_bad_value, small_lons, small_lats, lonlim, latlim, res)
     log_chlor=np.log10(chlor_a)
     mask=np.isnan(log_chlor)
     log_chlor=ma.array(log_chlor,mask=mask)
@@ -131,9 +145,10 @@ if __name__ == "__main__":
     CBar.set_label('log10 (mg/m^3) of the chlorophyll a concentration')
     proj.ax.set_title('binned chlorophyll values on a regular grid')
     proj.ax.figure.canvas.draw()
+    fig.savefig('chloro.png')
 
         
-    plt.show()
+    #plt.show()
 
 
 
