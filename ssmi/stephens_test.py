@@ -10,128 +10,15 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import site
 site.addsitedir('fortran/lib')
-import petty
-
-
-def wind_speed(sst,t19v,t22v,t37h,t37v):
-    """
-       input: sst (K), t19v (K), t22v (K), t37h (K)
-       output: windspeed (m/s)
-    """
-    speed=1.0969*(t19v)-0.4555e0*(t22v)- 1.76*(t37v)+0.786*(t37h)+ 147.9
-    return speed
-
-def emiss_interp(sst,windspeed,data):
-    """
-       input:  sst (K), windspeed (m/s), data instance
-       return dict(19:(emissv, emissh),37:(emissv,emissh))
-         which are the vertically and horizontally polarized emissivities
-         at 19 GHz and 37 GHz
-    """
-    winds=data.micro_winds
-    temps=data.micro_ssts
-    wind_index=np.searchsorted(winds,windspeed)
-    temp_index=np.searchsorted(temps,sst)
-    freq_index=0 #19 GHz
-    emissv=data.emissv[freq_index,wind_index,temp_index]
-    emissh=data.emissh[freq_index,wind_index,temp_index]
-    out={19:(emissh,emissv)}
-    freq_index=2 #37 GHz
-    emissv=data.emissv[freq_index,wind_index,temp_index]
-    emissh=data.emissh[freq_index,wind_index,temp_index]
-    out[37]=(emissh,emissv)
-    return out
-
-def absorb_interp(sst,data):
-    """
-       input: sst, data instance
-       output: dictionary with values for
-       'kl19' (m^2/kg), 'kv19' (m^2/kg), 'tox37', 'kv37' (m^2/kg), 'kl37' (m^2/kg), 'tox19', 'sst' (K)
-    """
-    row=np.searchsorted(data.micro_ssts,sst)
-    values=data.abs_coeffs.loc[row]
-    out=dict(values)
-    return out
-
-def emiss(sst,windspeed,data):
-    """
-       input:  sst (K), windspeed (m/s), data instance
-       return dict(19:(emissv, emissh),37:(emissv,emissh))
-         which are the vertically and horizontally polarized emissivities
-         at 19 GHz and 37 GHz
-    """
-    #19 GHz  = 1
-    freq=1
-    theta=53.1
-    h,v=petty.emiss(freq,windspeed,sst,theta)
-    out={19:(h,v)}
-    freq=3
-    h,v=petty.emiss(freq,windspeed,sst,theta)
-    out[37]=(h,v)
-    return out
-
-
-def absorb(sst,data):
-    """
-       input: sst, data instance
-       output: dictionary with values for
-       'kl19' (m^2/kg), 'kv19' (m^2/kg), 'tox37', 'kv37' (m^2/kg), 'kl37' (m^2/kg), 'tox19', 'sst' (K)
-    """
-    names=['sst','kl19','kl37','kv19','kv37','tox19','tox37']
-    values=petty.coef(sst)
-    out=dict(zip(names,values))
-    return out
-
-def find_wv_wl(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=None):
-    abs_dict=absorb(sst,data)
-    args=[sst,t19v,t22v,t37h,t37v]
-    windspeed=wind_speed(*args)
-    emiss_dict=emiss(sst,windspeed,data)
-    Trox=abs_dict['tox19']
-    emissh19,emissv19=emiss_dict[19]
-    Rv_Rh19=(1 - emissv19) - (1 - emissh19)
-    R1= -mu/2.*np.log(DeltaTb19/(sst*(Rv_Rh19)*Trox**2.))
-    kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
-    Trox=abs_dict['tox37']
-    emissh37,emissv37=emiss_dict[37]
-    Rv_Rh37=(1 - emissv37) - (1 - emissh37)
-    kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
-    R2= -mu/2.*np.log(DeltaTb37/(sst*(Rv_Rh37)*Trox**2.))
-    kl37,kv19=(abs_dict['kl37'],abs_dict['kv37'])
-    delta=kv19*kl37 - kl19*kv37
-    w=(R1*kl37 - R2*kl19)/delta
-    l=(R2*kv19 - R1*kv37)/delta
-    return (w,l)
-
-
-def find_greenwald(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=None):
-    abs_dict=absorb(sst,data)
-    args=[sst,t19v,t22v,t37h,t37v]
-    windspeed=wind_speed(*args)
-    emiss_dict=emiss(sst,windspeed,data)
-    Trox=abs_dict['tox19']
-    emissh19,emissv19=emiss_dict[19]
-    F19 = (t19h - sst )/(t19v - sst)
-    F37 = (t37h + 3.58 - sst)/(t37v + 3.58 - sst)
-    Rv_Rh19=(1 - emissv19) - (1 - emissh19)
-    r19v=(1.0 - emissv19)
-    term19=Rv_Rh19
-    term19b=r19v*(1. - F19)
-    R1= -mu/2.*np.log(DeltaTb19/(sst*term19b*Trox**2.))
-    kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
-    Trox=abs_dict['tox37']
-    emissh37,emissv37=emiss_dict[37]
-    r37v=(1.0 - emissv37)
-    Rv_Rh37=(1 - emissv37) - (1 - emissh37)
-    term37=Rv_Rh37
-    kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
-    term37b=r37v*(1. - F37)
-    R2= -mu/2.*np.log(DeltaTb37/(sst*term37b*Trox**2.))
-    kl37,kv19=(abs_dict['kl37'],abs_dict['kv37'])
-    delta=kv19*kl37 - kl19*kv37
-    w=(R1*kl37 - R2*kl19)/delta
-    l=(R2*kv19 - R1*kv37)/delta
-    return (w,l)
+try:
+    import petty
+    from petty_python import absorb_fortran as absorb
+    from petty_python import emiss_fortran as emiss
+except ImportError:
+    print("can't import fortran module, falling back to python versions")
+    from petty_python import absorb
+    from petty_python import emiss
+from petty_python import windspeed
 
 def create_test_numbers():
     t19h,t19v,t22v,t37h,t37v=(113.57, 183.24, 194.8, 148.13, 208.11)
@@ -170,6 +57,7 @@ def create_ubc_numbers(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=
     kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
     kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
     args=[sst,t19v,t22v,t37h-3.58,t37v-3.58]
+    args=[sst,t19v,t22v,t37h,t37v]
     windspeed=wind_speed(*args)
     print('inside ubc windspeed',windspeed)
     emiss_dict=emiss(sst,windspeed,data)
