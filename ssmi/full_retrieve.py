@@ -8,6 +8,8 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from mpl_toolkits.basemap import Basemap
+from matplotlib import cm
+from matplotlib.colors import Normalize
 import site
 site.addsitedir('fortran/lib')
 try:
@@ -22,13 +24,17 @@ from petty_python import wind_speed
 
 
 def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
-    print('linear: ',kl19,kv19,kl37,kv37,R1,R2)
     A=[[kl19,kv19],[kl37,kv37]]
     b=[R1,R2]
     return np.linalg.solve(A,b)
     
 if __name__ == "__main__":
 
+    plotdir='{}/{}'.format(os.getcwd(),'plots')
+    if not os.path.exists(plotdir):
+        os.makedirs(plotdir)
+
+    
     micro_file='./micro_coeffs.h5'
     micro_file=os.path.abspath(micro_file)
     print(micro_file)
@@ -81,56 +87,125 @@ if __name__ == "__main__":
         for the_month in months:
             for the_field in fields:
                 the_temps[the_month][the_field]=bright_h5[the_month][the_field][...]
-#
-# find the test pixel from http://www.aos.wisc.edu/~tristan/courses/aos740/AOS740_TPWLWP_Project.pdf
-    url='http://www.aos.wisc.edu/~tristan/courses/aos740/AOS740_TPWLWP_Project.pdf'
-    print('try to match results from {}'.format(url))
-    sst=the_temps['july']['sst'][...]
-    t19h=the_temps['july']['t19h'][...]
-    t19v=the_temps['july']['t19v'][...]
-    t22v=the_temps['july']['t22v'][...]
-    t37h=the_temps['july']['t37h'][...] + 3.58  #correction for cold bias (Greenwald et al., 1993)
-    t37v=the_temps['july']['t37v'][...] + 3.58
-    nrows,ncols=sst.shape
-    mu=np.cos(53.1*np.pi/180.)
-    for row in range(nrows):
-        for col in range(ncols):
-            if np.abs(sst[row,col] - 271.35) < 0.01 and \
-                np.abs(t19h[row,col] - 113.57) < 0.01:
-                abs_dict=absorb(sst[row,col],data)
+    out_dict={}
+    for the_month in ['july','jan']:
+        print('gridding {}'.format(the_month))
+        sst=the_temps[the_month]['sst'][...]
+        t19h=the_temps[the_month]['t19h'][...]
+        t19v=the_temps[the_month]['t19v'][...]
+        t22v=the_temps[the_month]['t22v'][...]
+        t37h=the_temps[the_month]['t37h'][...] + 3.58  #correction for cold bias (Greenwald et al., 1993)
+        t37v=the_temps[the_month]['t37v'][...] + 3.58
+        wv=np.empty_like(sst)
+        wl=np.empty_like(wv)
+        nrows,ncols=sst.shape
+        mu=np.cos(53.1*np.pi/180.)
+        for row in range(nrows):
+            for col in range(ncols):
                 sstx=sst[row,col]
-                t19hx=t19h[row,col]
-                t19vx=t19v[row,col]
-                t22vx=t22v[row,col]
-                t37hx=t37h[row,col]
-                t37vx=t37v[row,col]
-                args=[sstx,t19vx,t22vx,
-                      t37hx,t37vx]
-                windspeed=wind_speed(*args)
-                emiss_dict=emiss(sstx,windspeed,data)
-                emiss19h,emiss19v=emiss_dict[19]
-                emiss37h,emiss37v=emiss_dict[37]
-                r37v=(1.0 - emiss37v)
-                r19v=(1.0 - emiss19v)
-                r37h=(1.0 - emiss37h)
-                r19h=(1.0 - emiss19h)
-                Trox19=abs_dict['tox19']
-                Trox37=abs_dict['tox37']
-                DeltaTb19 = t19hx - t19vx
-                DeltaTb37 = t37hx - t37vx
-                F19 = (t19hx - sstx )/(t19vx - sstx)
-                F37 = (t37hx - sstx)/(t37vx - sstx)
-                term19=r19v*(1. - F19)
-                term37=r37v*(1. - F37)
-                kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
-                kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
-                R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
-                R2= -mu/2.*np.log(DeltaTb37/(sstx*term37*Trox37**2.))
-                wl,wv=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
-                print('UBC wl, wv: ',wl,wv)
-                #should be
-                #UBC wl, wv:  0.0482827199389 10.9545586818
-                
+                if sstx < 400.:
+                    abs_dict=absorb(sst[row,col],data)
+                    t19hx=t19h[row,col]
+                    t19vx=t19v[row,col]
+                    t22vx=t22v[row,col]
+                    t37hx=t37h[row,col]
+                    t37vx=t37v[row,col]
+                    args=[sstx,t19vx,t22vx,
+                          t37hx - 3.58,t37vx - 3.58] #remove cold bias correction from Goodberlet et al., 1989 regression
+                    windspeed=wind_speed(*args)
+                    emiss_dict=emiss(sstx,windspeed,data)
+                    emiss19h,emiss19v=emiss_dict[19]
+                    emiss37h,emiss37v=emiss_dict[37]
+                    r37v=(1.0 - emiss37v)
+                    r19v=(1.0 - emiss19v)
+                    r37h=(1.0 - emiss37h)
+                    r19h=(1.0 - emiss19h)
+                    Trox19=abs_dict['tox19']
+                    Trox37=abs_dict['tox37']
+                    DeltaTb19 = t19hx - t19vx
+                    DeltaTb37 = t37hx - t37vx
+                    F19 = (t19hx - sstx )/(t19vx - sstx)
+                    F37 = (t37hx - sstx)/(t37vx - sstx)
+                    term19=r19v*(1. - F19)
+                    term37=r37v*(1. - F37)
+                    kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
+                    kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
+                    R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
+                    R2= -mu/2.*np.log(DeltaTb37/(sstx*term37*Trox37**2.))
+                    wlx,wvx=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
+                    wv[row,col]=wvx
+                    wl[row,col]=wlx
+                else:
+                    wv[row,col]=np.nan
+                    wl[row,col]=np.nan
+        out_dict[the_month]=dict(wv=wv,wl=wl)
+
+    cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
+    cmap.set_over('r')
+    cmap.set_under('b')
+    cmap.set_bad('0.75') #75% grey
+    for the_month in ['jan','july']:
+        print('plotting {}'.format(the_month))
+        fields=out_dict[the_month]
+
+        vmin= 0.
+        vmax= 50.
+        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+
+        fig=plt.figure(figsize=[12,12])
+        ax1=fig.add_subplot(111)
+        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
+                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
+        m.drawcoastlines()
+        x,y=m(the_temps['lon'],the_temps['lat'])
+        # draw parallels and meridians.
+        m.drawparallels(np.arange(-90.,91.,30.))
+        m.drawmeridians(np.arange(-180.,181.,60.))
+        wv=ma.array(fields['wv'],mask=np.isnan(fields['wv']))
+        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
+        fig.colorbar(vals,extend='both')
+        plt.title("wv (kg/m^2) for {}".format(the_month))
+        figpath='{}/wv_{}.png'.format(plotdir,the_month)
+        fig.savefig(figpath)
+
+        vmin= 0.
+        vmax= 25.
+        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+
+        fig=plt.figure(figsize=[12,12])
+        ax1=fig.add_subplot(111)
+        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
+                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
+        m.drawcoastlines()
+        x,y=m(the_temps['lon'],the_temps['lat'])
+        # draw parallels and meridians.
+        m.drawparallels(np.arange(-90.,91.,30.))
+        m.drawmeridians(np.arange(-180.,181.,60.))
+        wv=ma.array(fields['wv'],mask=np.isnan(fields['wv']))
+        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
+        fig.colorbar(vals,extend='both')
+        plt.title("wv (kg/m^2) for {}".format(the_month))
+        figpath='{}/wv_clipped_{}.png'.format(plotdir,the_month)
+        fig.savefig(figpath)
+
+        
+        vmin= 0.
+        vmax= 0.5
+        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+        fig=plt.figure(figsize=[12,12])
+        ax1=fig.add_subplot(111)
+        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
+                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
+        m.drawcoastlines()
+        # draw parallels and meridians.
+        m.drawparallels(np.arange(-90.,91.,30.))
+        m.drawmeridians(np.arange(-180.,181.,60.))
+        wv=ma.array(fields['wl'],mask=np.isnan(fields['wl']))
+        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
+        fig.colorbar(vals,extend='both')
+        plt.title("wl (kg/m^2) for {}".format(the_month))
+        figpath='{}/wl_{}.png'.format(plotdir,the_month)
+        fig.savefig(figpath)
 
 
     

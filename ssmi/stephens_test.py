@@ -10,6 +10,11 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.basemap import Basemap
 import site
 site.addsitedir('fortran/lib')
+#
+# use the fortran wrapper if available, otherwise fall back
+# to interpolation of table produced by fortran/interp_petty.py
+#
+
 try:
     import petty
     from petty_python import absorb_fortran as absorb
@@ -31,6 +36,9 @@ def create_test_numbers():
     DeltaTb19=t19h - t19v
     DeltaTb37=t37h - t37v
     sst=271.75
+    #
+    # windspeed using uncorrected 37 GHz brightness temperatures
+    #
     windspeed=10.32
     emiss19h,emiss19v,emiss37h,emiss37v = 0.3255,0.6255,0.3972,0.7102
     names=['DeltaTb19','DeltaTb37','sst','windspeed','emiss19h','emiss19v','emiss37h','emiss37v']
@@ -48,16 +56,17 @@ def create_test_numbers():
     return out_dict
 
 def create_ubc_numbers(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=None):
-    t37h=t37h + 3.58
-    t37v=t37v + 3.58
     names=['sst','mu','t19h','t19v','t22v','t37h','t37v']
     values=[sst,mu,t19h,t19v,t22v,t37h,t37v]
     out_dict=dict(zip(names,values))
     abs_dict=absorb(sst,data)
     kl37,kv37=(abs_dict['kl37'],abs_dict['kv37'])
     kl19,kv19=(abs_dict['kl19'],abs_dict['kv19'])
-    args=[sst,t19v,t22v,t37h-3.58,t37v-3.58]
-    args=[sst,t19v,t22v,t37h,t37v]
+    #
+    # remove the 3.58 K bias correction because Goodberlet et al., 1989
+    # performed their statistical regression without it
+    #
+    args=[sst,t19v,t22v,t37h-3.58,t37v - 3.58]
     windspeed=wind_speed(*args)
     print('inside ubc windspeed',windspeed)
     emiss_dict=emiss(sst,windspeed,data)
@@ -148,32 +157,33 @@ if __name__ == "__main__":
     t19h=the_temps['july']['t19h'][...]
     t19v=the_temps['july']['t19v'][...]
     t22v=the_temps['july']['t22v'][...]
-    t37h=the_temps['july']['t37h'][...]
-    t37v=the_temps['july']['t37v'][...]
+    t37h=the_temps['july']['t37h'][...] + 3.58  #correct bias per Greenwald et al., 1993
+    t37v=the_temps['july']['t37v'][...] + 3.58
     nrows,ncols=sst.shape
     mu=np.cos(53.1*np.pi/180.)
     for row in range(nrows):
         for col in range(ncols):
             if np.abs(sst[row,col] - 271.35) < 0.01 and \
                 np.abs(t19h[row,col] - 113.57) < 0.01:
-                print('found the test pixel: ')
+                print('found the test pixel: dumpy row, col, lat, lon,sst, t19h,t19v,t22v,t37h,t37v')
                 print(row,col,the_temps['lat'][row,col],the_temps['lon'][row,col],
                       sst[row,col],t19h[row,col],t19v[row,col],t22v[row,col],
                       t37h[row,col],t37v[row,col])
+                #subtract bias correction since Goodberlet 1989 didn't use it
                 args=[sst[row,col],t19v[row,col],t22v[row,col],
-                      t37h[row,col],t37v[row,col]]
-                print('wind speed: ',wind_speed(*args))
+                      t37h[row,col]-3.58,t37v[row,col]-3.58]
+                print('wind speed for test pixel: ',wind_speed(*args))
                 print('emissivities: ',emiss(sst[row,col],wind_speed(*args),data))
                 absorb_dict=absorb(sst[row,col],data)
                 for key in ['kl19','kl37','kv19','kv37','tox19','tox37']:
                     print('{} -- {:8.4f}'.format(key,absorb_dict[key]))
                 the_month='july'
-                sstx=the_temps[the_month]['sst'][row,col]
-                t19hx=the_temps[the_month]['t19h'][row,col]
-                t19vx=the_temps[the_month]['t19v'][row,col]
-                t22vx=the_temps[the_month]['t22v'][row,col]
-                t37hx=the_temps[the_month]['t37h'][row,col]
-                t37vx=the_temps[the_month]['t37v'][row,col]
+                sstx=sst[row,col]
+                t19hx=t19h[row,col]
+                t19vx=t19v[row,col]
+                t22vx=t22v[row,col]
+                t37hx=t37h[row,col]
+                t37vx=t37v[row,col]
                 DeltaTb19 = t19hx - t19vx
                 DeltaTb37 = t37hx - t37vx
                 invars=[sstx,mu,DeltaTb19,DeltaTb37,t19hx,t19vx,t22vx,t37hx,t37vx]
