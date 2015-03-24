@@ -18,7 +18,7 @@ except ImportError:
     print("can't import fortran module, falling back to python versions")
     from petty_python import absorb
     from petty_python import emiss
-from petty_python import windspeed
+from petty_python import wind_speed
 
 def create_test_numbers():
     t19h,t19v,t22v,t37h,t37v=(113.57, 183.24, 194.8, 148.13, 208.11)
@@ -81,6 +81,7 @@ def create_ubc_numbers(sst,mu,DeltaTb19,DeltaTb37,t19h,t19v,t22v,t37h,t37v,data=
 
 
 def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
+    print('linear stephens: ',kl19,kv19,kl37,kv37,R1,R2)
     A=[[kl19,kv19],[kl37,kv37]]
     b=[R1,R2]
     return np.linalg.solve(A,b)
@@ -177,23 +178,27 @@ if __name__ == "__main__":
                 DeltaTb37 = t37hx - t37vx
                 invars=[sstx,mu,DeltaTb19,DeltaTb37,t19hx,t19vx,t22vx,t37hx,t37vx]
                 a_ubc=create_ubc_numbers(*invars,data=data)
-                t19hx,sstx,t19v,t37h,t37v,r19v,r37v=[a_ubc[key] for key in ['t19h','sst','t19v','t37h','t37v','r19v','r37v']]
+                t19hx,sstx,t19vx,t37hx,t37vx,r19v,r37v=[a_ubc[key] for key in ['t19h','sst','t19v','t37h','t37v','r19v','r37v']]
                 mu,DeltaTb19,Trox19,DeltaTb37,Trox37=[a_ubc[key] for key in ['mu','DeltaTb19','Trox19','DeltaTb37','Trox37']]
                 kl19,kl37,kv19,kv37=[a_ubc[key] for key in['kl19','kl37','kv19','kv37']]
-                F19 = (t19hx - sstx )/(t19v - sstx)
-                F37 = (t37h - sstx)/(t37v - sstx)
+                F19 = (t19hx - sstx )/(t19vx - sstx)
+                F37 = (t37hx - sstx)/(t37vx - sstx)
+                print('steph F37: ',F37,t37hx,t37vx,sstx)
                 term19=r19v*(1. - F19)
                 term37=r37v*(1. - F37)
+                ## import pdb
+                ## pdb.set_trace()
                 R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
                 R2= -mu/2.*np.log(DeltaTb37/(sstx*term37*Trox37**2.))
+                print('R2 stephens: ',F37,r37v,term37,DeltaTb37,sstx,Trox37)
                 wl,wv=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
                 print('UBC wl, wv: ',wl,wv)
                 a=create_test_numbers()
-                t19hx,sstx,t19v,t37h,t37v,r19v,r37v=[a[key] for key in ['t19h','sst','t19v','t37h','t37v','r19v','r37v']]
+                t19hx,sstx,t19vx,t37hx,t37vx,r19v,r37v=[a[key] for key in ['t19h','sst','t19v','t37h','t37v','r19v','r37v']]
                 mu,DeltaTb19,Trox19,DeltaTb37,Trox37=[a[key] for key in ['mu','DeltaTb19','Trox19','DeltaTb37','Trox37']]
                 kl19,kl37,kv19,kv37=[a[key] for key in['kl19','kl37','kv19','kv37']]
-                F19 = (t19hx - sstx )/(t19v - sstx)
-                F37 = (t37h - sstx)/(t37v - sstx)
+                F19 = (t19hx - sstx )/(t19vx - sstx)
+                F37 = (t37hx - sstx)/(t37vx - sstx)
                 term19=r19v*(1. - F19)
                 term37=r37v*(1. - F37)
                 R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
