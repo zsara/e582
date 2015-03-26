@@ -5,7 +5,7 @@
 
   usage:
 
-  ./level1_ocean.py level1bfile
+  ./level1_ocean.py level1bfile maskfile
 """
 
 from __future__ import division,print_function
@@ -16,6 +16,9 @@ import numpy as np
 import numpy.ma as ma
 import numba
 import os
+import site
+site.addsitedir('../utilities')
+from planck import planckInvert
 
 import matplotlib
 matplotlib.use('Agg')
@@ -55,7 +58,8 @@ if __name__ == "__main__":
         chan1=(reflective - offset[0])*scale[0]
 
 
-        
+    c31_bright=planckInvert(11.03,chan31)
+    
     mask_file,=glob.glob(args.maskfile)
     with h5py.File(mask_file) as mask_h5:
         land_mask=mask_h5['landmask'][...]
@@ -64,6 +68,7 @@ if __name__ == "__main__":
 
     chan1=chan1[water_hit]
     chan31=chan31[water_hit]
+    c31_bright=c31_bright[water_hit]
 
     chan1_min,chan31_min=np.amin(chan1),np.amin(chan31)
     chan1_max,chan31_max=np.amax(chan1),np.amax(chan31)
@@ -73,7 +78,13 @@ if __name__ == "__main__":
 
     hist_array,chan1_centers,chan31_centers=numba_hist2d(chan1,chan31,chan1_edges,chan31_edges)
     hist_array=ma.array(hist_array,mask=np.isnan(hist_array))
+    
 
+    bright31_edges=np.linspace(200,305,40)
+    bright31_array,chan1_centers,bright31_centers=numba_hist2d(chan1,c31_bright,
+                                                           chan1_edges,bright31_edges)
+    bright31_array=ma.array(bright31_array,mask=np.isnan(bright31_array))
+    
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
     cmap.set_under('b')
@@ -82,14 +93,13 @@ if __name__ == "__main__":
     vmax= 10000.
     the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
 
-    fig=plt.figure(2)
-    fig.clf()
-    ax=fig.add_subplot(111)
+    plt.close('all')
+    fig,ax=plt.subplots(figsize=(12,12))
     im=ax.pcolormesh(chan1_centers,chan31_centers,hist_array,cmap=cmap,norm=the_norm)
     cb=fig.colorbar(im,extend='both')
-    ax.set_title('2d histogram B -- water only')
+    ax.set_title('raw counts for channel 1 vs. channel 31')
     fig.canvas.draw()
-    figpath='{}/{}'.format(plotdir,'histogram1W.png')
+    figpath='{}/{}'.format(plotdir,'histogram.png')
     fig.savefig(figpath)
 
     vmin= 0.
@@ -97,14 +107,27 @@ if __name__ == "__main__":
     the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
     log_hist_array=np.log10(hist_array)
 
-    fig=plt.figure(3)
-    fig.clf()
-    ax=fig.add_subplot(111)
+    fig,ax=plt.subplots(figsize=(12,12))
     im=ax.pcolormesh(chan1_centers,chan31_centers,log_hist_array,cmap=cmap,norm=the_norm)
     cb=fig.colorbar(im,extend='both')
-    ax.set_title('2d histogram C -- water only')
+    ax.set_title('log10 counts for chan1 vs. chan31')
+    ax.set_xlabel('channel 1 reflectvity')
+    ax.set_ylabel('channel 31 radiance (W/m^2/micron/sr)')
     fig.canvas.draw()
-    figpath='{}/{}'.format(plotdir,'histogram2W.png')
+    figpath='{}/{}'.format(plotdir,'histogram_log10.png')
+    fig.savefig(figpath)
+
+    log_bright=np.log10(bright31_array)
+    log_hist_array=np.log10(hist_array)
+    fig,ax=plt.subplots(figsize=(12,12))
+    im=ax.pcolormesh(chan1_centers,bright31_centers,log_bright,cmap=cmap,norm=the_norm)
+    cb=fig.colorbar(im,extend='both')
+    ax.set_title('log10 counts for Channel 31 brightness')
+    ax.set_xlabel('channel 1 reflectvity')
+    ax.set_ylabel('channel 31 brightness temperature (K)')
+    ax.set_ylim([200,305])
+    fig.canvas.draw()
+    figpath='{}/{}'.format(plotdir,'c31_bright.png')
     fig.savefig(figpath)
 
 

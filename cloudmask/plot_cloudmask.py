@@ -17,6 +17,9 @@ from matplotlib import pyplot as plt
 import site
 site.addsitedir('../utilities')
 from reproject import reproj_numba
+import planck
+reload(planck)
+from planck import planckInvert
 from mpl_toolkits.basemap import Basemap
 from matplotlib.colors import Normalize
 from matplotlib import cm
@@ -95,6 +98,7 @@ if __name__ == "__main__":
         the_lat=geom_file['MODIS_Swath_Type_GEO']['Geolocation Fields']['Latitude'][...]
 
 
+    c31_bright=planckInvert(11.03,chan31)
     lim= None
     the_slice=slice(0,lim)
     small_lons=the_lon[the_slice,:]
@@ -135,6 +139,8 @@ if __name__ == "__main__":
     chan1_grid, longrid, latgrid, bin_count = reproj_numba(chan1_small,missing_val, small_lons, small_lats, lonlim, latlim, res)
     mask_grid, longrid, latgrid, bin_count = reproj_numba(maskout,missing_val, small_lons, small_lats, lonlim, latlim, res)
     land_grid, longrid, latgrid, bin_count = reproj_numba(landout,missing_val, small_lons, small_lats, lonlim, latlim, res)
+    land_grid, longrid, latgrid, bin_count = reproj_numba(landout,missing_val, small_lons, small_lats, lonlim, latlim, res)
+    c31bright_grid, longrid, latgrid, bin_count = reproj_numba(c31_bright,missing_val, small_lons, small_lats, lonlim, latlim, res)
 
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
@@ -205,5 +211,22 @@ if __name__ == "__main__":
     proj.ax.set_title('land mask')
     proj.ax.figure.canvas.draw()
     fig.savefig('landmask.png')
+
+
+    fig,ax=plt.subplots(1,1,figsize=(12,12))
+    #
+    # tell Basemap what axis to plot into
+    #
+    vmin= 200.
+    vmax= 300.
+    the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+    lcc_values['ax']=ax
+    proj=make_plot(lcc_values)
+    CS=proj.ax.pcolormesh(x,y,c31bright_grid,cmap=cmap,norm=the_norm)
+    CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
+    CBar.set_label('11 micron brightness temp (K)')
+    proj.ax.set_title('11 micron brightness temp')
+    proj.ax.figure.canvas.draw()
+    fig.savefig('c31_bright.png')
 
     plt.show()
