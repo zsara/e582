@@ -18,6 +18,11 @@ import site
 site.addsitedir('../utilities')
 from reproject import reproj_numba
 import planck
+#
+# compat module redefines importlib.reload if we're
+# running python3
+#
+from compat import cpreload as reload
 reload(planck)
 from planck import planckInvert
 from mpl_toolkits.basemap import Basemap
