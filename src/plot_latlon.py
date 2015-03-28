@@ -1,3 +1,4 @@
+from __future__ import division, print_function
 from mpl_toolkits.basemap import Basemap
 import h5py
 from matplotlib import pyplot as plt
@@ -24,7 +25,6 @@ if __name__ == '__main__':
                     llcrnrlon=-133,llcrnrlat=40,
                     urcrnrlon=-118,urcrnrlat=50)
     proj=Basemap(**lcc_values)
-booga booga
     #
     # set up a yellow-green colormap
     # with reserved colors for over (red), under (blue) and missing (grey)
