@@ -1,0 +1,9 @@
+{
+    "_comment": "day 126 case for Jenny",
+    "l1b_fileA": "MYD021KM.A2014126.2035.005.2014127185528.h5",
+    "l1b_fileB": "MYD021KM.A2014126.2040.005.2014127185705.h5",
+    "geom_fileA": "MYD03.A2014126.2035.006.2014127181105.h5",
+    "geom_fileB": "MYD03.A2014126.2040.006.2014127182119.h5",
+    "mask_fileA": "mask_day126_2035.h5",
+    "mask_fileB": "mask_day126_2040.h5"
+}
