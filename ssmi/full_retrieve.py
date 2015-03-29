@@ -153,7 +153,17 @@ if __name__ == "__main__":
                     wv[row,col]=np.nan
                     wl[row,col]=np.nan
         out_dict[the_month]=dict(wv=wv,wl=wl)
-    
+
+    output='correct.h5'
+    with h5py.File(output,'w') as f:
+        for month in out_dict.keys():
+            group=f.create_group(month)
+            for name,field in out_dict[month].items():
+                dset=group.create_dataset(name,field.shape,dtype=field.dtype)
+                dset[...]=field[...]
+        f.attrs['history']='written by full retrieve.py tag noiter with correc={}'.format(correct)
+        f.attrs['correct_flag']=correct
+        
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
     cmap.set_under('b')
