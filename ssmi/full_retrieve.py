@@ -30,8 +30,8 @@ def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
     
 if __name__ == "__main__":
 
-    correct = True
-    output='correct.h5'
+    correct = False
+    output='incorrect.h5'
     plotdir='{}/{}'.format(os.getcwd(),'plots')
     if not os.path.exists(plotdir):
         os.makedirs(plotdir)
