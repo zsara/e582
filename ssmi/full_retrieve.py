@@ -30,6 +30,7 @@ def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
     
 if __name__ == "__main__":
 
+    correct = True
     plotdir='{}/{}'.format(os.getcwd(),'plots')
     if not os.path.exists(plotdir):
         os.makedirs(plotdir)
@@ -133,13 +134,26 @@ if __name__ == "__main__":
                     R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
                     R2= -mu/2.*np.log(DeltaTb37/(sstx*term37*Trox37**2.))
                     wlx,wvx=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
-                    wv[row,col]=wvx
-                    wl[row,col]=wlx
+                    if wvx < 25. or not correct:
+                        wv[row,col]=wvx
+                        wl[row,col]=wlx
+                    else:
+                        gamma= -5.8  # K/km
+                        H=2.2  #km
+                        f=np.exp(50*kv19/mu)
+                        Trw19_2=np.exp(-2.*kv19*wvx/mu)
+                        Tbar=sstx + gamma*H*(1. - f*Trw19_2)*Trox19
+                        F19 = (t19hx - Tbar )/(t19vx - Tbar)
+                        term19=r19v*(1. - F19)
+                        R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
+                        wlx,wvx=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
+                        wv[row,col]=wvx
+                        wl[row,col]=wlx
                 else:
                     wv[row,col]=np.nan
                     wl[row,col]=np.nan
         out_dict[the_month]=dict(wv=wv,wl=wl)
-
+    
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
     cmap.set_under('b')
