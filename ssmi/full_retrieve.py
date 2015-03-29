@@ -31,6 +31,7 @@ def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
 if __name__ == "__main__":
 
     correct = True
+    output='correct.h5'
     plotdir='{}/{}'.format(os.getcwd(),'plots')
     if not os.path.exists(plotdir):
         os.makedirs(plotdir)
@@ -154,7 +155,6 @@ if __name__ == "__main__":
                     wl[row,col]=np.nan
         out_dict[the_month]=dict(wv=wv,wl=wl)
 
-    output='correct.h5'
     with h5py.File(output,'w') as f:
         group=f.create_group('latlon')
         for key in ['lat','lon']:
