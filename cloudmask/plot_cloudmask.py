@@ -146,6 +146,7 @@ if __name__ == "__main__":
 
     with h5py.File(mod06_file) as m06_h5:
         phase=m06_h5['mod06']['Data Fields']['Cloud_Phase_Infrared_1km'][the_slice,:]
+        phase=phase.astype(np.int32)
 
     lcc_values,lon_res,lat_res=find_corners(small_lons,small_lats)
     lcc_values['fix_aspect']=True
@@ -302,8 +303,8 @@ if __name__ == "__main__":
     tdiff=c29bright_grid - c31bright_grid
     CS=proj.ax.pcolormesh(x,y,tdiff,cmap=cmap,norm=the_norm)
     CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
-    CBar.set_label('8 micron brightness temp (K)')
-    proj.ax.set_title('8 micron brightness temp')
+    CBar.set_label('T8 - T11 micron brightness temp diff (K)')
+    proj.ax.set_title('T8 - T11  micron brightness temp diff')
     proj.ax.figure.canvas.draw()
     fig.savefig('{}/t8-t11_bright.png'.format(plot_dir))
 
