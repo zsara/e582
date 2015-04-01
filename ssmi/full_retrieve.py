@@ -30,6 +30,8 @@ def linear_solve(kl19,kv19,kl37,kv37,R1,R2):
     
 if __name__ == "__main__":
 
+    correct = False
+    output='incorrect.h5'
     plotdir='{}/{}'.format(os.getcwd(),'plots')
     if not os.path.exists(plotdir):
         os.makedirs(plotdir)
@@ -133,80 +135,41 @@ if __name__ == "__main__":
                     R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
                     R2= -mu/2.*np.log(DeltaTb37/(sstx*term37*Trox37**2.))
                     wlx,wvx=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
-                    wv[row,col]=wvx
-                    wl[row,col]=wlx
+                    if wvx < 25. or not correct:
+                        wv[row,col]=wvx
+                        wl[row,col]=wlx
+                    else:
+                        gamma= -5.8  # K/km
+                        H=2.2  #km
+                        f=np.exp(50*kv19/mu)
+                        Trw19_2=np.exp(-2.*kv19*wvx/mu)
+                        Tbar=sstx + gamma*H*(1. - f*Trw19_2)*Trox19
+                        F19 = (t19hx - Tbar )/(t19vx - Tbar)
+                        term19=r19v*(1. - F19)
+                        R1= -mu/2.*np.log(DeltaTb19/(sstx*term19*Trox19**2.))
+                        wlx,wvx=linear_solve(kl19,kv19,kl37,kv37,R1,R2)
+                        wv[row,col]=wvx
+                        wl[row,col]=wlx
                 else:
                     wv[row,col]=np.nan
                     wl[row,col]=np.nan
         out_dict[the_month]=dict(wv=wv,wl=wl)
 
-    cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
-    cmap.set_over('r')
-    cmap.set_under('b')
-    cmap.set_bad('0.75') #75% grey
-    for the_month in ['jan','july']:
-        print('plotting {}'.format(the_month))
-        fields=out_dict[the_month]
+    with h5py.File(output,'w') as f:
+        group=f.create_group('latlon')
+        for key in ['lat','lon']:
+            field=the_temps[key]
+            dset=group.create_dataset(key,field.shape,dtype=field.dtype)
+            dset[...]=field[...]
 
-        vmin= 0.
-        vmax= 50.
-        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
-
-        fig=plt.figure(figsize=[12,12])
-        ax1=fig.add_subplot(111)
-        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
-                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
-        m.drawcoastlines()
-        x,y=m(the_temps['lon'],the_temps['lat'])
-        # draw parallels and meridians.
-        m.drawparallels(np.arange(-90.,91.,30.))
-        m.drawmeridians(np.arange(-180.,181.,60.))
-        wv=ma.array(fields['wv'],mask=np.isnan(fields['wv']))
-        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
-        fig.colorbar(vals,extend='both')
-        plt.title("wv (kg/m^2) for {}".format(the_month))
-        figpath='{}/wv_{}.png'.format(plotdir,the_month)
-        fig.savefig(figpath)
-
-        vmin= 0.
-        vmax= 25.
-        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
-
-        fig=plt.figure(figsize=[12,12])
-        ax1=fig.add_subplot(111)
-        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
-                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
-        m.drawcoastlines()
-        x,y=m(the_temps['lon'],the_temps['lat'])
-        # draw parallels and meridians.
-        m.drawparallels(np.arange(-90.,91.,30.))
-        m.drawmeridians(np.arange(-180.,181.,60.))
-        wv=ma.array(fields['wv'],mask=np.isnan(fields['wv']))
-        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
-        fig.colorbar(vals,extend='both')
-        plt.title("wv (kg/m^2) for {}".format(the_month))
-        figpath='{}/wv_clipped_{}.png'.format(plotdir,the_month)
-        fig.savefig(figpath)
-
+        for month in out_dict.keys():
+            group=f.create_group(month)
+            for name,field in out_dict[month].items():
+                dset=group.create_dataset(name,field.shape,dtype=field.dtype)
+                dset[...]=field[...]
+        f.attrs['history']='written by full retrieve.py tag noiter with correc={}'.format(correct)
+        f.attrs['correct_flag']=correct
         
-        vmin= 0.
-        vmax= 0.5
-        the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
-        fig=plt.figure(figsize=[12,12])
-        ax1=fig.add_subplot(111)
-        m = Basemap(projection='mill',llcrnrlat=-90,urcrnrlat=90,\
-                    llcrnrlon=0,urcrnrlon=360,resolution='c',ax=ax1)
-        m.drawcoastlines()
-        # draw parallels and meridians.
-        m.drawparallels(np.arange(-90.,91.,30.))
-        m.drawmeridians(np.arange(-180.,181.,60.))
-        wv=ma.array(fields['wl'],mask=np.isnan(fields['wl']))
-        vals=m.pcolormesh(x,y,wv,cmap=cmap,norm=the_norm)
-        fig.colorbar(vals,extend='both')
-        plt.title("wl (kg/m^2) for {}".format(the_month))
-        figpath='{}/wl_{}.png'.format(plotdir,the_month)
-        fig.savefig(figpath)
-
 
     
         
