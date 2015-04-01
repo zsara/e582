@@ -38,6 +38,7 @@ if __name__ == "__main__":
         #channel31 is emissive channel 10
         band_names=l1b_h5['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['band_names']
         try:
+            band_names_ascii=band_names
             band_names_list=band_names.split(',')
             index31=band_names_list.index('31')
             print('success: type of band_names: {} -- value of index31: {}'.format(type(band_names),index31))
