@@ -18,6 +18,7 @@ import site
 site.addsitedir('../utilities')
 from reproject import reproj_numba
 import planck
+import os,errno
 #
 # compat module redefines importlib.reload if we're
 # running python3
@@ -30,6 +31,12 @@ from matplotlib.colors import Normalize
 from matplotlib import cm
 import numpy as np
 import textwrap
+import io,json
+from collections import OrderedDict as od
+import compat
+reload(compat)
+from compat import text_
+import numpy.ma as ma
 
 def make_plot(lcc_values):
     """
@@ -75,21 +82,34 @@ if __name__ == "__main__":
     # the following two lines help format the docstring at the top of the file
     # into a help text
     #
+
     linebreaks=argparse.RawTextHelpFormatter
     descrip=textwrap.dedent(globals()['__doc__'])
     parser = argparse.ArgumentParser(formatter_class=linebreaks,description=descrip)
-    parser.add_argument('l1bfile',type=str,help='MYD21KM radiance file')
-    parser.add_argument('geomfile',type=str,help='MYD03 geometry file')
-    parser.add_argument('cloudmaskfile',type=str,help='cloud mask file')
+    parser.add_argument('initfile',type=str,help='name of json file with filenames')
     args=parser.parse_args()
 
-        
-    l1b_file,=glob.glob(args.l1bfile)
-    geom_file,=glob.glob(args.geomfile)
-    mask_file,=glob.glob(args.cloudmaskfile)
+    with io.open(args.initfile,'r',encoding='utf8') as f:
+        name_dict=json.loads(f.read(),object_pairs_hook=od)
+
+    keys=['l1b_file', 'geom_file', 'mask_file', 'm06_file']
+
+    l1b_file,geom_file,mask_file,mod06_file=\
+          [name_dict[key] for key in keys]
+
+    plot_dir='plots'
+    try:
+        os.makedirs(plot_dir)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            pass  #not a problem if file exists
+
+
     with h5py.File(geom_file) as geom_file,h5py.File(l1b_file) as l1b_file:
         #channel31 is emissive channel 10
-        index31=10
+        band_names=text_(l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['band_names'])
+        band_names=band_names.split(',')
+        index31=band_names.index('31')
         chan31=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'][index31,:,:]
         scale=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['radiance_scales'][index31]
         offset=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['radiance_offsets'][index31]
@@ -99,11 +119,19 @@ if __name__ == "__main__":
         scale=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_250_Aggr1km_RefSB'].attrs['reflectance_scales']
         offset=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_250_Aggr1km_RefSB'].attrs['reflectance_offsets']
         chan1=(reflective - offset[0])*scale[0]
+        index29=band_names.index('29')
+
+        chan29=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'][index29,:,:]
+        scale=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['radiance_scales'][index29]
+        offset=l1b_file['MODIS_SWATH_Type_L1B']['Data Fields']['EV_1KM_Emissive'].attrs['radiance_offsets'][index29]
+        chan29=(chan29 - offset)*scale
+
         the_lon=geom_file['MODIS_Swath_Type_GEO']['Geolocation Fields']['Longitude'][...]
         the_lat=geom_file['MODIS_Swath_Type_GEO']['Geolocation Fields']['Latitude'][...]
 
 
     c31_bright=planckInvert(11.03,chan31)
+    c29_bright=planckInvert(8.55,chan29)
     lim= None
     the_slice=slice(0,lim)
     small_lons=the_lon[the_slice,:]
@@ -115,6 +143,9 @@ if __name__ == "__main__":
     with h5py.File(cloud_mask) as cm_h5:
          maskout=cm_h5['cloudmask'][the_slice,:]
          landout=cm_h5['landmask'][the_slice,:]
+
+    with h5py.File(mod06_file) as m06_h5:
+        phase=m06_h5['mod06']['Data Fields']['Cloud_Phase_Infrared_1km'][the_slice,:]
 
     lcc_values,lon_res,lat_res=find_corners(small_lons,small_lats)
     lcc_values['fix_aspect']=True
@@ -136,7 +167,7 @@ if __name__ == "__main__":
 
     plt.close('all')
 
-    missing_val=-999.
+    missing_val=-999.  
     latlim=[lcc_values['llcrnrlat'],lcc_values['urcrnrlat']]
     lonlim=[lcc_values['llcrnrlon'],lcc_values['urcrnrlon']]
     res=0.02
@@ -146,7 +177,10 @@ if __name__ == "__main__":
     land_grid, longrid, latgrid, bin_count = reproj_numba(landout,missing_val, small_lons, small_lats, lonlim, latlim, res)
     land_grid, longrid, latgrid, bin_count = reproj_numba(landout,missing_val, small_lons, small_lats, lonlim, latlim, res)
     c31bright_grid, longrid, latgrid, bin_count = reproj_numba(c31_bright,missing_val, small_lons, small_lats, lonlim, latlim, res)
+    c29bright_grid, longrid, latgrid, bin_count = reproj_numba(c29_bright,missing_val, small_lons, small_lats, lonlim, latlim, res)
+    phase_grid,longrid, latgrid, bin_count = reproj_numba(phase,missing_val, small_lons, small_lats, lonlim, latlim, res)
 
+    
     cmap=cm.YlGn  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
     cmap.set_over('r')
     cmap.set_under('0.5')
@@ -167,7 +201,7 @@ if __name__ == "__main__":
     CBar.set_label('Channel 31 radiance (W/m^2/micron/sr')
     proj.ax.set_title('Channel 31 radiance')
     proj.ax.figure.canvas.draw()
-    fig.savefig('chan31.png')
+    fig.savefig('{}/chan31.png'.format(plot_dir))
 
     fig,ax=plt.subplots(1,1,figsize=(12,12))
     #
@@ -183,7 +217,7 @@ if __name__ == "__main__":
     CBar.set_label('Channel 1 reflectance')
     proj.ax.set_title('Channel 1 reflectance')
     proj.ax.figure.canvas.draw()
-    fig.savefig('chan1.png')
+    fig.savefig('{}/chan1.png'.format(plot_dir))
 
     fig,ax=plt.subplots(1,1,figsize=(12,12))
     #
@@ -199,7 +233,7 @@ if __name__ == "__main__":
     CBar.set_label('cloud mask')
     proj.ax.set_title('cloud mask')
     proj.ax.figure.canvas.draw()
-    fig.savefig('cloudmask.png')
+    fig.savefig('{}/cloudmask.png'.format(plot_dir))
 
     fig,ax=plt.subplots(1,1,figsize=(12,12))
     #
@@ -215,7 +249,8 @@ if __name__ == "__main__":
     CBar.set_label('land mask')
     proj.ax.set_title('land mask')
     proj.ax.figure.canvas.draw()
-    fig.savefig('landmask.png')
+    fig.savefig('{}/landmask.png'.format(plot_dir))
+
 
 
     fig,ax=plt.subplots(1,1,figsize=(12,12))
@@ -227,11 +262,69 @@ if __name__ == "__main__":
     the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
     lcc_values['ax']=ax
     proj=make_plot(lcc_values)
+    c31bright_grid=ma.array(c31bright_grid,mask=np.isnan(c31bright_grid))
     CS=proj.ax.pcolormesh(x,y,c31bright_grid,cmap=cmap,norm=the_norm)
     CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
     CBar.set_label('11 micron brightness temp (K)')
     proj.ax.set_title('11 micron brightness temp')
     proj.ax.figure.canvas.draw()
-    fig.savefig('c31_bright.png')
+    fig.savefig('{}/c31_bright.png'.format(plot_dir))
+
+
+    fig,ax=plt.subplots(1,1,figsize=(12,12))
+    #
+    # tell Basemap what axis to plot into
+    #
+    vmin= 200.
+    vmax= 300.
+    the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+    lcc_values['ax']=ax
+    proj=make_plot(lcc_values)
+    c29bright_grid=ma.array(c29bright_grid,mask=np.isnan(c29bright_grid))
+    CS=proj.ax.pcolormesh(x,y,c29bright_grid,cmap=cmap,norm=the_norm)
+    CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
+    CBar.set_label('8 micron brightness temp (K)')
+    proj.ax.set_title('8 micron brightness temp')
+    proj.ax.figure.canvas.draw()
+    fig.savefig('{}/c29_bright.png'.format(plot_dir))
+
+    fig,ax=plt.subplots(1,1,figsize=(12,12))
+    #
+    # tell Basemap what axis to plot into
+    #
+    cmap=cm.RdYlBu_r  #see http://wiki.scipy.org/Cookbook/Matplotlib/Show_colormaps
+    cmap.set_over('r')
+    cmap.set_under('0.5')
+    cmap.set_bad('0.75') #75% grey
+    the_norm=None
+    lcc_values['ax']=ax
+    proj=make_plot(lcc_values)
+    tdiff=c29bright_grid - c31bright_grid
+    CS=proj.ax.pcolormesh(x,y,tdiff,cmap=cmap,norm=the_norm)
+    CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
+    CBar.set_label('8 micron brightness temp (K)')
+    proj.ax.set_title('8 micron brightness temp')
+    proj.ax.figure.canvas.draw()
+    fig.savefig('{}/t8-t11_bright.png'.format(plot_dir))
+
+    fig,ax=plt.subplots(1,1,figsize=(12,12))
+    vmin= 0.
+    vmax= 6.
+    the_norm=Normalize(vmin=vmin,vmax=vmax,clip=False)
+    cmap=cm.YlGn
+    cmap.set_over('r')
+    cmap.set_under('0.5')
+    cmap.set_bad('0.75') #75% grey
+    lcc_values['ax']=ax
+    proj=make_plot(lcc_values)
+    phase_grid=ma.array(phase_grid,mask=np.isnan(phase_grid))
+    CS=proj.ax.pcolormesh(x,y,tdiff,cmap=cmap,norm=the_norm)
+    CBar=proj.colorbar(CS, 'right', size='5%', pad='5%',extend='both')
+    CBar.set_label('phase 0-6')
+    proj.ax.set_title('0 -- cloud free,1 -- water cloud,2 -- ice cloud,3 -- mixed phase cloud,6 -- undetermined phase')
+    proj.ax.figure.canvas.draw()
+    fig.savefig('{}/phase.png'.format(plot_dir))
+
+
 
     plt.show()
