@@ -1,0 +1,7 @@
+{
+    "_comment": "day 127 tropical convection",
+    "l1b_file": "MYD021KM.A2014127.2110.006.2014128164713.h5",
+    "geom_file": "MYD03.A2014127.2110.006.2014128114754.h5",
+    "mask_file": "mask_day127_2110.h5",
+    "m06_file": "MYD06_L2.A2014127.2110.006.2014270194259.h5"
+}
