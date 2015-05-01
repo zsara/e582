@@ -6,7 +6,7 @@
 
   usage:
 
-  ./plot_cloudmask.py MYD021KM.A2014127.2110*.h5 MYD03.A2014127.2110.h5 mask_day127_2110.h5 
+  ./plot_cloudmask.py MYD021KM.A2010261.0525*.h5 MYD03.A2010261.0525*.h5 mask_day261_0525.h5 
 
 """
 from __future__ import division

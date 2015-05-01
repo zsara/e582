@@ -4,7 +4,7 @@
 dump the cloud and land masks into a new h5 file
 usage:
 
-   ./dump_cloudmask.py MYD35_L2.A2014127.2110.006.2014128165842.h5 mask_day126_2110.h5
+   ./dump_cloudmask.py MYD35_L2.A2010261.0525.006.2014075120621.h5 mask_day261_0525.h5
 
 """
 from __future__ import division
